@@ -26,7 +26,7 @@ import team4400.Util.Swerve.CANModuleOptimizer;
 import team4400.Util.Swerve.SwerveModuleConstants;
 
 /** Add your docs here. */
-public class REVSwerveModule {
+public class SwerveModule {
 
     public final int moduleNumber;
 
@@ -46,7 +46,7 @@ public class REVSwerveModule {
 
     private Rotation2d lastAngle;
     
-    public REVSwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants){
+    public SwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants){
 
         this.moduleNumber = moduleNumber;
 
@@ -67,8 +67,8 @@ public class REVSwerveModule {
 
         driveEncoder = driveMotor.getEncoder();
 
-        driveEncoder.setPositionConversionFactor(ModuleConstants.kREVDriveEncoderRot2Meter);
-        driveEncoder.setVelocityConversionFactor(ModuleConstants.kREVDriveEncoderRPM2MeterPerSec);
+        driveEncoder.setPositionConversionFactor(ModuleConstants.kDriveEncoderRot2Meter);
+        driveEncoder.setVelocityConversionFactor(ModuleConstants.kDriveEncoderRPM2MeterPerSec);
 
         feedForward = new 
             SimpleMotorFeedforward(ModuleConstants.kS, ModuleConstants.kV, ModuleConstants.kA);

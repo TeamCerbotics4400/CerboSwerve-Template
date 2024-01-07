@@ -17,13 +17,5 @@ public class Conversions {
     return (distanceInMeters / (Math.PI * ModuleConstants.kWheelDiameterMeters)) 
                                                         * ModuleConstants.kDriveMotorGearRatio;
   }
-
-  public static double talonFXUnitsToRPM(double sensorUnits) {
-    return (sensorUnits / ModuleConstants.CTRE_INTEGRATED_ENCODER_CPR) * 600.0;
-  }
-  
-  public static double RPMtoTalonFXUnits(double RPM) {
-    return (RPM / 600.0) * ModuleConstants.CTRE_INTEGRATED_ENCODER_CPR;
-  }
 }
 

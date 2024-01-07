@@ -35,13 +35,9 @@ public final class Constants {
     public static final double kWheelDiameterMeters = Units.inchesToMeters(4);
     public static final double kDriveMotorGearRatio = 1 / 5.50; //Drive Gear Ratio, 5.50 or 6.55
     public static final double kTurningMotorGearRatio = 1 / 10.29; //Turning Gear Ratio
-    public static final double kREVDriveEncoderRot2Meter = 
+    public static final double kDriveEncoderRot2Meter = 
                                 kDriveMotorGearRatio * Math.PI * kWheelDiameterMeters;
-    public static final double kREVDriveEncoderRPM2MeterPerSec = kREVDriveEncoderRot2Meter / 60;
-    public static final double kCTREDriveEncoderRot2Meter = 
-                                kDriveMotorGearRatio * Math.PI * kWheelDiameterMeters;
-    public static final double kCTREDriveEncoderRPM2MeterPerSec = kCTREDriveEncoderRot2Meter / 60;
-    public static final double CTRE_INTEGRATED_ENCODER_CPR = 2048;
+    public static final double kDriveEncoderRPM2MeterPerSec = kDriveEncoderRot2Meter / 60;
     public static final double kP = 0.0,
                                kI = 0,
                                kD = 0,
