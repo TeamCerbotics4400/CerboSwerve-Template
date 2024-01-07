@@ -139,8 +139,7 @@ public class SwerveModule {
         desiredState = 
             CANModuleOptimizer.optimize(desiredState, getState().angle);
 
-        //setAngle(desiredState);
-        turnMotor.setControl(anglePosition.withPosition(desiredState.angle.getRotations()));
+        setAngle(desiredState);
         setSpeed(desiredState, isOpenLoop);  
 
         SmartDashboard.putString("Swerve [" + moduleNumber + "] state", desiredState.toString());
@@ -160,22 +159,21 @@ public class SwerveModule {
         }
     }
 
-    /*public void setAngle(SwerveModuleState desiredState){
+    public void setAngle(SwerveModuleState desiredState){
         Rotation2d angle = (Math.abs(desiredState.speedMetersPerSecond) <= 
         (DriveConstants.kPhysicalMaxSpeedMetersPerSecond * 0.01)) ? lastAngle : desiredState.angle;
 
-        /*turnDutyCycle.Output = 
-                turnController.calculate(getAngleDeegrees(), desiredState.angle.getDegrees());
-        turnMotor.setControl(turnDutyCycle);
+        
         turnMotor.setControl(anglePosition.withPosition(desiredState.angle.getRotations()));
         lastAngle = angle;
-    }*/
+    }
 
     public void lockModule(){
         double targetAngle = -45;
         //turnMotor.set(turnController.calculate(targetAngle));
     }
 
+    //Invert if needed for odometry correction
     public SwerveModulePosition getPosition(){
         return new SwerveModulePosition(
             getDrivePosition(), 
