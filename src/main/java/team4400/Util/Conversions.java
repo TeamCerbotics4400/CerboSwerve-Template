@@ -4,26 +4,36 @@
 
 package team4400.Util;
 
-import frc.robot.Constants.ModuleConstants;
-
 /** Add your docs here. */
 public class Conversions {
-    public static double TalonFXRotationsToDistanceMeters(double rotations){
-    return (rotations * (ModuleConstants.kWheelDiameterMeters * Math.PI)) 
-                                                        / ModuleConstants.kDriveMotorGearRatio;
+  public static double MPSToRPS(double wheelMPS, double circumference){
+    double wheelRPS = wheelMPS / circumference;
+    return wheelRPS;
   }
 
-  public static double meters2TalonFXRotations(double distanceInMeters){
-    return (distanceInMeters / (Math.PI * ModuleConstants.kWheelDiameterMeters)) 
-                                                        * ModuleConstants.kDriveMotorGearRatio;
+  public static double RPSToMPS(double wheelRPS, double circumference){
+    double wheelMPS = wheelRPS * circumference;
+    return wheelMPS;
   }
 
-  public static double talonFXUnitsToRPM(double sensorUnits) {
-    return (sensorUnits / ModuleConstants.CTRE_INTEGRATED_ENCODER_CPR) * 600.0;
+  public static double rotationsToMeters(double wheelRotations, double circumference){
+    double wheelMeters = wheelRotations * circumference;
+    return wheelMeters;
   }
-  
-  public static double RPMtoTalonFXUnits(double RPM) {
-    return (RPM / 600.0) * ModuleConstants.CTRE_INTEGRATED_ENCODER_CPR;
+
+  public static double metersToRotations(double wheelMeters, double circumference){
+    double wheelRotations = wheelMeters / circumference;
+    return wheelRotations;
+  }
+
+  public static double rotationsToDegrees(double motorRotation){
+    double degrees = motorRotation * 360;
+    return degrees;
+  }
+
+  public static double degreesToRotations(double motorRotation){
+    double rotations = motorRotation / 360;
+    return rotations;
   }
 }
 

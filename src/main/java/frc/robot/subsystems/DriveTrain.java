@@ -20,19 +20,19 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.CTRESwerveModule;
+import frc.robot.SwerveModule;
 import frc.robot.Constants.DriveConstants;
 
 public class DriveTrain extends SubsystemBase {
-  public CTRESwerveModule[] swerveModules = new CTRESwerveModule[]{
+  public SwerveModule[] swerveModules = new SwerveModule[]{
     //Left Front Module
-    new CTRESwerveModule(0, DriveConstants.Module0.CONSTANTS),
+    new SwerveModule(0, DriveConstants.Module0.CONSTANTS),
     //Right Front Module
-    new CTRESwerveModule(1, DriveConstants.Module1.CONSTANTS),
+    new SwerveModule(1, DriveConstants.Module1.CONSTANTS),
     //Back Right Module
-    new CTRESwerveModule(2, DriveConstants.Module2.CONSTANTS),
+    new SwerveModule(2, DriveConstants.Module2.CONSTANTS),
     //Back Left Module
-    new CTRESwerveModule(3, DriveConstants.Module3.CONSTANTS)
+    new SwerveModule(3, DriveConstants.Module3.CONSTANTS)
   };
 
   private final Pigeon2 imu = new Pigeon2(DriveConstants.IMU_ID, "rio");
@@ -77,12 +77,12 @@ public class DriveTrain extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
 
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       SmartDashboard.putNumber("Module [" + mod.moduleNumber + "] Absolute Encoder", 
       swerveModules[mod.moduleNumber].getAngleDeegrees());
     }
 
-    for(CTRESwerveModule mod: swerveModules){
+    for(SwerveModule mod: swerveModules){
       SmartDashboard.putNumber("Module [" + mod.moduleNumber + "] Velocity",
        swerveModules[mod.moduleNumber].getDriveVelocity());
     }
@@ -94,7 +94,6 @@ public class DriveTrain extends SubsystemBase {
     SmartDashboard.putNumber("Odometry Rotation", 
                             m_vision.estimatedPose2d().getRotation().getDegrees());
 
-    //SmartDashboard.putDa
 
     SmartDashboard.putNumber("IMU Angle", getHeading());  
   
@@ -109,13 +108,13 @@ public class DriveTrain extends SubsystemBase {
   }
 
   public void resetModuleEncoders(){
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       mod.resetEncoders();
     }
   }
 
   public void stopModules(){
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       mod.stop();
     }
   }
@@ -128,14 +127,14 @@ public class DriveTrain extends SubsystemBase {
     SwerveDriveKinematics.desaturateWheelSpeeds(
       desiredStates, 
       DriveConstants.kPhysicalMaxSpeedMetersPerSecond);
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       mod.setDesiredState(desiredStates[mod.moduleNumber], isOpenLoop);
     }
   }
 
   public SwerveModuleState[] getModuleStates(){
     SwerveModuleState[] states = new SwerveModuleState[4];
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       states[mod.moduleNumber] = mod.getState();
     }
     return states;
@@ -143,14 +142,14 @@ public class DriveTrain extends SubsystemBase {
 
   public SwerveModulePosition[] getModulePositions(){
     SwerveModulePosition[] positions = new SwerveModulePosition[4];
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       positions[mod.moduleNumber] = mod.getPosition();
     }
     return positions;
   }
 
   public void lockWheels(){
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       mod.lockModule();
     }
   }
@@ -177,7 +176,7 @@ public class DriveTrain extends SubsystemBase {
 
   //Debug
   public void tuneDrivePID(double speedMtsPerSec){
-    for(CTRESwerveModule mod : swerveModules){
+    for(SwerveModule mod : swerveModules){
       mod.tuneModulePID(speedMtsPerSec);
     }
   }

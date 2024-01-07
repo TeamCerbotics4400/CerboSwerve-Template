@@ -4,14 +4,14 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -26,63 +26,62 @@ import team4400.Util.Swerve.CANModuleOptimizer;
 import team4400.Util.Swerve.SwerveModuleConstants;
 
 /** Add your docs here. */
-public class CTRESwerveModule {
+public class SwerveModule {
 
     public final int moduleNumber;
 
     private final TalonFX driveMotor;
     private final TalonFX turnMotor;
 
-    //private final RelativeEncoder driveEncoder;
-
     private final AnalogEncoder absoluteEncoder;
-
-    private final PIDController turnController;
  
     private final double absoluteEncoderOffset;
 
+    private final SimpleMotorFeedforward feedForward;
+
     private Rotation2d lastAngle;
+
+    public TalonFXConfiguration driveMotorConfig = new TalonFXConfiguration();
+    public TalonFXConfiguration turnMotorConfig = new TalonFXConfiguration();
+
+    private final DutyCycleOut driveDutyCycle = new DutyCycleOut(0);
+    private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
+    private final PositionVoltage anglePosition = new PositionVoltage(0);
     
-    public CTRESwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants){
+    public SwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants){
 
         this.moduleNumber = moduleNumber;
 
         driveMotor = new TalonFX(moduleConstants.driveMotorID, "rio");
-        turnMotor = new TalonFX(moduleConstants.driveMotorID, "rio");
-
-        driveMotor.getConfigurator().apply(new TalonFXConfiguration());
-        turnMotor.getConfigurator().apply(new TalonFXConfiguration());
-
-        var driveConfiguration = driveMotor.getConfigurator();
-        var turnConfiguration = turnMotor.getConfigurator();
-
-        var driveMotorConfigs = new MotorOutputConfigs();
-        var turnMotorConfigs = new MotorOutputConfigs();
+        turnMotor = new TalonFX(moduleConstants.turnMotorID, "rio");
 
         absoluteEncoderOffset = moduleConstants.angleOffset;
         absoluteEncoder = new AnalogEncoder(moduleConstants.absoluteEncoderID);
 
-        driveMotor.setInverted(moduleConstants.driveReversed);
-        turnMotor.setInverted(moduleConstants.turnReversed);
+        feedForward = new 
+            SimpleMotorFeedforward(ModuleConstants.kS, ModuleConstants.kV, ModuleConstants.kA);
+        
+        /* Drive Motor */
+        driveMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        driveMotorConfig.MotorOutput.Inverted = moduleConstants.driveReversed;
 
-        driveMotorConfigs.NeutralMode = NeutralModeValue.Brake;
-        turnMotorConfigs.NeutralMode = NeutralModeValue.Coast;
+        driveMotorConfig.Slot0.kP = ModuleConstants.kP;
+        driveMotorConfig.Slot0.kI = ModuleConstants.kI;
+        driveMotorConfig.Slot0.kD = ModuleConstants.kD;
 
-        var driveSlot0Configs = new Slot0Configs();
+        /* Turn Motor */
+        turnMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        turnMotorConfig.MotorOutput.Inverted = moduleConstants.turnReversed;
 
-        driveSlot0Configs.kP = ModuleConstants.kP;
-        driveSlot0Configs.kI = ModuleConstants.kI;
-        driveSlot0Configs.kD = ModuleConstants.kD;
-        driveSlot0Configs.kS = ModuleConstants.kS;
-        driveSlot0Configs.kV = ModuleConstants.kV;
-        driveSlot0Configs.kA = ModuleConstants.kA;
+        turnMotorConfig.Feedback.SensorToMechanismRatio = ModuleConstants.kTurningMotorGearRatio;
+        turnMotorConfig.ClosedLoopGeneral.ContinuousWrap = true;
 
-        driveConfiguration.apply(driveSlot0Configs, 0.050);
-        driveConfiguration.apply(driveMotorConfigs);
-        turnConfiguration.apply(turnMotorConfigs);
+        turnMotorConfig.Slot0.kP = ModuleConstants.kPTurning;
+        turnMotorConfig.Slot0.kI = 0;
+        turnMotorConfig.Slot0.kD = 0;
 
-        turnController = new PIDController(ModuleConstants.kPTurning, 0, 0);
-        turnController.enableContinuousInput(-Math.PI, Math.PI);
+        driveMotor.getConfigurator().apply(driveMotorConfig);
+        turnMotor.getConfigurator().apply(turnMotorConfig);
 
         Timer.delay(1.0);
         resetEncoders();
@@ -91,13 +90,17 @@ public class CTRESwerveModule {
     }
 
     public double getDrivePosition(){
-        return Conversions.TalonFXRotationsToDistanceMeters(
-                                                driveMotor.getPosition().getValueAsDouble());
+        return Conversions.rotationsToMeters(driveMotor.getPosition().getValueAsDouble(), 
+                                                            ModuleConstants.kWheelCircumerence);
     }
 
     public double getDriveVelocity(){
-        return Conversions.TalonFXRotationsToDistanceMeters(
-                                                driveMotor.getVelocity().getValueAsDouble());
+        return Conversions.RPSToMPS(driveMotor.getVelocity().getValueAsDouble(), 
+                                                            ModuleConstants.kWheelCircumerence);
+    }
+
+    public double getTurnRotation(){
+        return turnMotor.getPosition().getValueAsDouble();
     }
 
     public double getRawAbsoluteVolts(){
@@ -123,12 +126,12 @@ public class CTRESwerveModule {
 
     public void resetEncoders(){
         driveMotor.setPosition(0);
-        absoluteEncoder.reset();
-    }
+        turnMotor.setPosition(Units.degreesToRotations(getAngleDeegrees()));//absoluteEncoder.reset();
+    }   
 
     public SwerveModuleState getState(){
         return new SwerveModuleState(getDriveVelocity(), 
-        Rotation2d.fromDegrees(getAngleDeegrees()));
+        Rotation2d.fromRotations(getTurnRotation()));
     }
 
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop){
@@ -136,7 +139,8 @@ public class CTRESwerveModule {
         desiredState = 
             CANModuleOptimizer.optimize(desiredState, getState().angle);
 
-        setAngle(desiredState);
+        //setAngle(desiredState);
+        turnMotor.setControl(anglePosition.withPosition(desiredState.angle.getRotations()));
         setSpeed(desiredState, isOpenLoop);  
 
         SmartDashboard.putString("Swerve [" + moduleNumber + "] state", desiredState.toString());
@@ -144,29 +148,32 @@ public class CTRESwerveModule {
 
     public void setSpeed(SwerveModuleState desiredState, boolean isOpenLoop){
         if(isOpenLoop){
-            double percentOutput = 
+            driveDutyCycle.Output = 
                 desiredState.speedMetersPerSecond / DriveConstants.kPhysicalMaxSpeedMetersPerSecond;
-            driveMotor.set(percentOutput);
+            driveMotor.setControl(driveDutyCycle);
         } else {
-            var request = new VelocityVoltage(0).withSlot(0);
-
-            driveMotor.setControl(request.withVelocity(
-                    Conversions.meters2TalonFXRotations(desiredState.speedMetersPerSecond)));
+            driveVelocity.Velocity = 
+                            Conversions.MPSToRPS(desiredState.speedMetersPerSecond, 
+                                                ModuleConstants.kWheelCircumerence);
+            driveVelocity.FeedForward = feedForward.calculate(desiredState.speedMetersPerSecond);
+            driveMotor.setControl(driveVelocity);
         }
     }
 
-    public void setAngle(SwerveModuleState desiredState){
+    /*public void setAngle(SwerveModuleState desiredState){
         Rotation2d angle = (Math.abs(desiredState.speedMetersPerSecond) <= 
         (DriveConstants.kPhysicalMaxSpeedMetersPerSecond * 0.01)) ? lastAngle : desiredState.angle;
 
-        turnMotor
-        .set(turnController.calculate(turningDeegreesToRadians(), desiredState.angle.getRadians()));
+        /*turnDutyCycle.Output = 
+                turnController.calculate(getAngleDeegrees(), desiredState.angle.getDegrees());
+        turnMotor.setControl(turnDutyCycle);
+        turnMotor.setControl(anglePosition.withPosition(desiredState.angle.getRotations()));
         lastAngle = angle;
-    }
+    }*/
 
     public void lockModule(){
         double targetAngle = -45;
-        turnMotor.set(turnController.calculate(targetAngle));
+        //turnMotor.set(turnController.calculate(targetAngle));
     }
 
     public SwerveModulePosition getPosition(){
