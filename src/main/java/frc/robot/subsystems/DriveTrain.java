@@ -149,6 +149,20 @@ public class DriveTrain extends SubsystemBase {
     return positions;
   }
 
+  public double getAverageDriveSpeed(){
+    double sumVelocities = 0.0;
+
+    for(SwerveModule mod : swerveModules){
+      sumVelocities += Math.abs(mod.getDriveVelocity());
+    }
+
+    return sumVelocities / swerveModules.length;
+  }
+
+  public double getAngularAcceleration(){
+    return imu.getAngularVelocityZWorld().getValueAsDouble();
+  }
+
   public void lockWheels(){
     for(SwerveModule mod : swerveModules){
       mod.lockModule();

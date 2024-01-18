@@ -31,6 +31,7 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
+    //Check if axis need to be inverted
     m_drive.setDefaultCommand(new TeleopControl
     (m_drive, 
     () -> chassisDriver.getRawAxis(1), 
