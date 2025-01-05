@@ -4,119 +4,233 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.pathfinding.Pathfinding;
 import edu.wpi.first.util.datalog.DataLog;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.Util.LocalADStarAK;
+import frc.Util.NoteVisualizer;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-/**
- * The VM is configured to automatically run this class, and to call the functions corresponding to
- * each mode, as described in the TimedRobot documentation. If you change the name of this class or
- * the package after creating this project, you must also update the build.gradle file in the
- * project.
- */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
-
   private RobotContainer m_robotContainer;
-  DoubleLogEntry batteryVoltage;
+  private static double[] xNotes = new double[7];
+  private static double[] yNotes = new double[7];
+  private double[] robotCords = new double[2];
+  private static Timer timer = new Timer();
+  private static boolean shouldReset = false;
 
-  /**
-   * This function is run when the robot is first started up and should be used for any
-   * initialization code.
-   */
   @Override
   public void robotInit() {
-    // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
-    // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
 
+    DataLogManager.start("C:\\Users\\Roman\\Documents\\Logs");
+
+    // Record metadata
+    Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+    Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+    Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+    Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+    switch (BuildConstants.DIRTY) {
+      case 0:
+        Logger.recordMetadata("GitDirty", "All changes committed");
+        break;
+      case 1:
+        Logger.recordMetadata("GitDirty", "Uncomitted changes");
+        break;
+      default:
+        Logger.recordMetadata("GitDirty", "Unknown");
+        break;
+    }
+
+    // Set a metadata value
+    Pathfinding.setPathfinder(new LocalADStarAK());
     DataLog log = DataLogManager.getLog();
 
-    if(Constants.needToLog){
+    if (Constants.needToLog) {
       DataLogManager.start();
       DriverStation.startDataLog(log);
     }
 
-    batteryVoltage = new DoubleLogEntry(log, "Battery Voltage");
+    switch (Constants.currentMode) {
+      case REAL:
+        // Running on a real robot, log to a USB stick ("/U/logs")
+        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
 
-   m_robotContainer.getDrive().setAllianceForVision(DriverStation.getAlliance().get());
+      case SIM:
+        // Running a physics simulator, log to NT
+        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
 
+      case REPLAY:
+        // Replaying a log, set up replay source
+        setUseTiming(false); // Run as fast as possible
+        String logPath = LogFileUtil.findReplayLog();
+        Logger.setReplaySource(new WPILOGReader(logPath));
+        Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+        break;
+    }
+
+    Logger.start();
+    Logger.disableConsoleCapture();
+
+    if (!Logger.hasReplaySource()) {
+    RobotController.setTimeSource(RobotController::getFPGATime);
+}
   }
 
-  /**
-   * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
-   * that you want ran during disabled, autonomous, teleoperated and test.
-   *
-   * <p>This runs after the mode specific periodic functions, but before LiveWindow and
-   * SmartDashboard integrated updating.
-   */
   @Override
   public void robotPeriodic() {
-    // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
-    // commands, running already-scheduled commands, removing finished or interrupted commands,
-    // and running subsystem periodic() methods.  This must be called from the robot's periodic
-    // block in order for anything in the Command-based framework to work.
+
     CommandScheduler.getInstance().run();
-    batteryVoltage.append(RobotController.getBatteryVoltage());
+    SmartDashboard.putBoolean("IsRedAlliance", isRedAlliance());
+
+    robotCords[0] = RobotContainer.getSwerveSubsystem().getPose().getX();
+    robotCords[1] = RobotContainer.getSwerveSubsystem().getPose().getY();
+
+    SmartDashboard.putNumber("Xnote", xNotes[0]);
+    SmartDashboard.putNumber("Ynote", yNotes[0]);
+    SmartDashboard.putBoolean("HasNoteInSim", NoteVisualizer.hasSimNote());
+
+    SmartDashboard.putNumberArray("Robot Coords", robotCords);
+    //NoteVisualizer.showIntakedNotes(RobotContainer.getArmSubsystem().getAngleRadiants());
   }
 
-  /** This function is called once each time the robot enters Disabled mode. */
   @Override
   public void disabledInit() {}
 
   @Override
   public void disabledPeriodic() {}
 
-  /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
+  @Override
+  public void disabledExit() {}
+
   @Override
   public void autonomousInit() {
+
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
-    // schedule the autonomous command (example)
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
+    /* 
+    2024 Note visualizer
+    NoteVisualizer.resetAutoNotes();
+
+    for (int i = 0; i < 7; i++) {
+      xNotes[i] = NoteVisualizer.getAutoNote(i).getX();
+      yNotes[i] = NoteVisualizer.getAutoNote(i).getY();
+    }
+    NoteVisualizer.deleteNote(3);
+    deleteCords(3);
+    NoteVisualizer.deleteNote(4);
+    deleteCords(4);
+    NoteVisualizer.resetAutoNotes();*/
   }
 
-  /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+   /* 
+   2024 Game piece visualizer
+   NoteVisualizer.showAutoNotes();
+
+    for (int i = 0; i < 7; i++) {
+      if (Math.abs(xNotes[i] - robotCords[0]) < 0.5
+          && Math.abs(yNotes[i] - robotCords[1]) < 0.5
+          && RobotContainer.getArmSubsystem().getState() == ArmStates.INTAKING) {
+        NoteVisualizer.takeAutoNote(i);
+        NoteVisualizer.enableShowNote();
+      }
+    }*/
+  }
+
+  @Override
+  public void autonomousExit() {}
 
   @Override
   public void teleopInit() {
-    // This makes sure that the autonomous stops running when
-    // teleop starts running. If you want the autonomous to
-    // continue until interrupted by another command, remove
-    // this line or comment it out.
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    NoteVisualizer.clearAutoNotes();
   }
 
-  /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+
+    SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
+  }
+
+  @Override
+  public void teleopExit() {
+    timer.stop();
+    timer.reset();
+  }
 
   @Override
   public void testInit() {
-    // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
   }
 
-  /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {}
 
-  /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void testExit() {}
 
-  /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+   /* 2024 Game piece visualizer
+    NoteVisualizer.teleopNote();
+    if (Math.abs(NoteVisualizer.getSourceNote().getX() - robotCords[0]) < 0.7
+        && Math.abs(NoteVisualizer.getSourceNote().getY() - robotCords[1]) < 0.7
+        && RobotContainer.getArmSubsystem().getState() == ArmStates.INTAKING) {
+      NoteVisualizer.enableShowNote();
+    }
+
+    if (RobotContainer.getArmSubsystem().getState() == ArmStates.SHOOTING) {
+      shouldReset = true;
+      oiaefio();
+    }
+    if (shouldReset) {
+      oiaefio();
+    }*/
+  }
+
+  public static boolean isRedAlliance() {
+    return DriverStation.getAlliance()
+        .filter(value -> value == DriverStation.Alliance.Red)
+        .isPresent();
+  }
+
+  public static void deleteCords(int note) {
+    xNotes[note] = 0;
+    yNotes[note] = 0;
+  }
+
+  public static void oiaefio() {
+    timer.start();
+    NoteVisualizer.enableAccurateNotes(2.79253, timer.get() * 8);
+
+    if (NoteVisualizer.getZ() > 2.2) {
+      timer.stop();
+      timer.reset();
+      shouldReset = false;
+    }
+  }
 }

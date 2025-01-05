@@ -1,67 +1,130 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot;
 
+import static frc.robot.Constants.DriveConstants.kPhysicalMaxAngularSpeedRadiansPerSecond;
+
 import com.ctre.phoenix6.signals.InvertedValue;
-
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
-import team4400.Util.Swerve.SwerveModuleConstants;
 
-/**
- * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
- * constants. This class should not be used for any other purpose. All constants should be declared
- * globally (i.e. public static). Do not put anything functional in this class.
- *
- * <p>It is advised to statically import this class (or one of its inner classes) wherever the
- * constants are needed, to reduce verbosity.
- */
+public class Constants {
 
- //TODO: PLACEHOLDER VALUES ONLY, CHANGE IDs AND PID VALUES ACCORDING TO YOUR ROBOT
+  public static final Mode currentMode = Mode.SIM;
+  public static final boolean needToLog = true;
 
- /*************** DRIVE ****************/
+  public static enum Mode {
+    /** Running on a real robot. */
+    REAL,
 
- /*
- * Two options: 5.50 or 6.55
- * All of this data available in
- * https://docs.wcproducts.com/wcp-swervex/general-info/ratio-options
- */
+    /** Running a physics simulator. */
+    SIM,
 
-public final class Constants {
-  public static boolean needToLog = true;
-
-  public static final class ModuleConstants{
-    public static final double kWheelDiameterMeters = Units.inchesToMeters(4.0);
-    public static final double kWheelCircumerence = kWheelDiameterMeters * Math.PI;
-    public static final double kDriveMotorGearRatio = 5.50; //Drive Gear Ratio, 5.50 or 6.55
-    public static final double kTurningMotorGearRatio = 10.29; //Turning Gear Ratio
-    public static final double kREVDriveEncoderRot2Meter = 
-                                kDriveMotorGearRatio * Math.PI * kWheelDiameterMeters;
-    public static final double kREVDriveEncoderRPM2MeterPerSec = kREVDriveEncoderRot2Meter / 60;
-    public static final double kCTREDriveEncoderRot2Meter = 
-                                kDriveMotorGearRatio * Math.PI * kWheelDiameterMeters;
-    public static final double kCTREDriveEncoderRPM2MeterPerSec = kCTREDriveEncoderRot2Meter / 60;
-    public static final double kP = 0.0,
-                               kI = 0,
-                               kD = 0,
-                               kFF = 0.0,
-                               kS = 0.0,
-                               kV = 0.0,
-                               kA = 0.0;
-    public static final double kPTurning = 100.0;
+    /** Replaying from a log file. */
+    REPLAY
   }
 
-  public static final class DriveConstants{
-    /* Specific module constants from FRC 95:
-     * https://github.com/first95/FRC2023/blob/f0e881c39ade544b3b71936995f7f075105f0b93/Clarke/src/main/java/frc/robot/Constants.java#LL136C16-L136C23
-     * Gives us a tool for a cleaner and readable swerve code
-    */
+  public static class DriveConstants {
 
-    /*    
-     *                   F             
+    public static final double kDriveGearRatio = 5.5;
+    public static final double kTurnGearRatio = 10.29;
+
+    // Distance between left and right wheels
+    public static final double kTrackWidth = 0.6096;
+    // Distance between front and back wheels
+    public static final double kWheelBase = 0.635;
+
+    public static final double MaxAngularRate = 1.5 * Math.PI;
+    public static final double MaxLinearSpeed = 18.01;
+
+    public static final double kPhysicalMaxAngularSpeedRadiansPerSecond = 2 * 2 * Math.PI;
+
+    public static final double kTeleDriveMaxSpeedMetersPerSecond = Units.feetToMeters(18.01) * 0.80;
+    public static final double kTeleDriveMaxAngularSpeedRadiansPerSecond =
+        kPhysicalMaxAngularSpeedRadiansPerSecond / 3;
+    public static final double kTeleDriveMaxAccelerationUnitsPerSecond = 3;
+    public static final double kTeleDriveMaxAngularAccelerationUnitsPerSecond = 3;
+
+    public static final double traslationP = 5.0,
+        traslationD = 0.0,
+        rotationP = 5.0,
+        rotationD = 0.0;
+
+    public static final String CANBUS_STRING = "Swerve_Canivore";
+    public static final int PIGEON_ID = 15;
+  }
+
+  public static class AutoConstants {
+    public static String autoValue = "2";
+
+    /*public static final PathConstraints kPathConstraints =
+    new PathConstraints(
+        Units.feetToMeters(MaxLinearSpeed),
+        kTeleDriveMaxSpeedMetersPerSecond,
+        kPhysicalMaxAngularSpeedRadiansPerSecond,
+        Math.PI * 2);*/
+  }
+
+  public class FieldConstants {
+    public static double fieldLength = Units.inchesToMeters(651.223);
+    public static double fieldWidth = Units.inchesToMeters(323.277);
+    public static double wingX = Units.inchesToMeters(229.201);
+    public static double podiumX = Units.inchesToMeters(126.75);
+    public static double startingLineX = Units.inchesToMeters(74.111);
+
+    /* For auto aligning */
+    public static Pose2d blueAmpPose = new Pose2d(2.0, 7.62, Rotation2d.fromDegrees(90));
+    public static Pose2d bluePickupPose = new Pose2d(15.331, 1, Rotation2d.fromDegrees(-60));
+    public static Pose2d redPickupPose = new Pose2d(2, 1, Rotation2d.fromDegrees(-60));
+    public static Pose2d redAmpPose = new Pose2d(15.331, 7.62, Rotation2d.fromDegrees(90));
+
+    /*For note simulation */
+    public static final Translation3d blueSpeaker = new Translation3d(0.225, 5.55, 2.1);
+    public static final Translation3d redSpeaker = new Translation3d(16.317, 5.55, 2.1);
+    public static final Translation3d blueAmp = new Translation3d(1.85, 8.25, 0.8);
+    public static final Translation3d redAmp = new Translation3d(15.333, 8.25, 0.8);
+
+    /** Staging locations for each note */
+    public static final class StagingLocations {
+      public static final double centerlineX = fieldLength / 2.0;
+
+      public static final double centerlineFirstY = Units.inchesToMeters(29.638);
+      public static final double centerlineSeparationY = Units.inchesToMeters(66);
+      public static final double spikeX = Units.inchesToMeters(114);
+
+      public static final double spikeFirstY = Units.inchesToMeters(161.638);
+      public static final double spikeSeparationY = Units.inchesToMeters(57);
+
+      public static final Translation2d[] centerlineTranslations = new Translation2d[5];
+      public static final Translation2d[] spikeTranslations = new Translation2d[3];
+
+      static {
+        for (int i = 0; i < centerlineTranslations.length; i++) {
+          centerlineTranslations[i] =
+              new Translation2d(centerlineX, centerlineFirstY + (i * centerlineSeparationY));
+        }
+      }
+
+      static {
+        for (int i = 0; i < spikeTranslations.length; i++) {
+          spikeTranslations[i] = new Translation2d(spikeX, spikeFirstY + (i * spikeSeparationY));
+        }
+      }
+    }
+  }
+
+  public static class ModuleConstants {
+    /*
+     *                   F
      *   ┌───────┬─────────────────┬───────┐
      *   │       │                 │       │
      *   │ Mod 0 │                 │ Mod 1 │
@@ -76,127 +139,112 @@ public final class Constants {
      *   ├───────┐                 ┌───────┤
      *   │       │                 │       │
      *   │ Mod 3 │                 │ Mod 2 │
-     *   │       │                 │       │
+     *   │       │      arm        │       │
      *   └───────┴─────────────────┴───────┘
-     *                   B
+     *                  B
      */
 
-     //Offsets are different in each robot and encoder;
-    public static final class Module0{
-      public static final int DRIVE_ID = 1;
-      public static final int TURN_ID = 2;
-      public static final InvertedValue driveReversed = InvertedValue.Clockwise_Positive;
-      public static final InvertedValue turnReversed = InvertedValue.Clockwise_Positive;
-      public static final int ABSOLUTE_ID = 0; 
-      public static double encoderOffset = 0.0;
+    /** Front Left module 0 * */
+    public static final byte kFrontLeftDriveMotorId = 1;
 
-      public static final SwerveModuleConstants CONSTANTS = 
-      new SwerveModuleConstants(DRIVE_ID, TURN_ID, driveReversed, 
-      turnReversed, ABSOLUTE_ID, encoderOffset);
-    }
+    public static final byte kFrontLeftSteerMotorId = 2;
+    public static final byte kFrontLeftEncoderId = 3;
+    public static final double kFrontLeftEncoderOffset = -2.15;
+    /** Front Right module 1 * */
+    public static final byte kFrontRightDriveMotorId = 4;
 
-    public static final class Module1{
-      public static final int DRIVE_ID = 3;
-      public static final int TURN_ID = 4;
-      public static final InvertedValue driveReversed = InvertedValue.CounterClockwise_Positive;
-      public static final InvertedValue turnReversed = InvertedValue.Clockwise_Positive;
-      public static final int ABSOLUTE_ID = 1;
-      public static double encoderOffset = 0.0;
+    public static final byte kFrontRightSteerMotorId = 5;
+    public static final byte kFrontRightEncoderId = 6;
+    public static final double kFrontRightEncoderOffset = -2.9;
+    /** Back Left module 2 * */
+    public static final byte kBackLeftDriveMotorId = 10;
 
-      public static final SwerveModuleConstants CONSTANTS = 
-      new SwerveModuleConstants(DRIVE_ID, TURN_ID, driveReversed, 
-      turnReversed, ABSOLUTE_ID, encoderOffset);
-    }
+    public static final byte kBackLeftSteerMotorId = 11;
+    public static final byte kBackLeftEncoderId = 12;
+    public static final double kBackLeftEncoderOffset = 1.82;
+    /** Back Right module 3 * */
+    public static final byte kBackRightDriveMotorId = 7;
 
-    public static final class Module2{
-      public static final int DRIVE_ID = 5;
-      public static final int TURN_ID = 6;
-      public static final InvertedValue driveReversed = InvertedValue.CounterClockwise_Positive;
-      public static final InvertedValue turnReversed = InvertedValue.Clockwise_Positive;
-      public static final int ABSOLUTE_ID = 2;
-      public static double encoderOffset = 0.0;
+    public static final byte kBackRightSteerMotorId = 8;
+    public static final byte kBackRightEncoderId = 9;
+    public static final double kBackRightEncoderOffset = -2.085;
 
-      public static final SwerveModuleConstants CONSTANTS = 
-      new SwerveModuleConstants(DRIVE_ID, TURN_ID, driveReversed, 
-      turnReversed, ABSOLUTE_ID, encoderOffset);
-    }
-
-    public static final class Module3{
-      public static final int DRIVE_ID = 7;
-      public static final int TURN_ID = 8;
-      public static final InvertedValue driveReversed = InvertedValue.Clockwise_Positive;
-      public static final InvertedValue turnReversed = InvertedValue.Clockwise_Positive;
-      public static final int ABSOLUTE_ID = 3;
-      public static double encoderOffset = 0.0;
-
-      public static final SwerveModuleConstants CONSTANTS = 
-      new SwerveModuleConstants(DRIVE_ID, TURN_ID, driveReversed, 
-      turnReversed, ABSOLUTE_ID, encoderOffset);
-    }
-
-    public static final int IMU_ID = 9;
-
-    //Distance between left and right wheels
-    public static final double kTrackWidth = 0.0;
-    //Distance between front and back wheels
-    public static final double kWheelBase = 0.0;
-  
-    public static final SwerveDriveKinematics kSwerveKinematics = new SwerveDriveKinematics(
-      new Translation2d(kWheelBase / 2, kTrackWidth / 2),
-      new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
-      new Translation2d(-kWheelBase / 2, -kTrackWidth / 2),
-      new Translation2d(-kWheelBase / 2, kTrackWidth / 2 ));
-
-      /*
-       * Kinematics order:
-       * 1. Mod0
-       * 2. Mod1
-       * 3. Mod2
-       * 4. Mod3
-       */
-
-    /*Free speed of each gearing:
-    * 5.50 = 18.01 ft/s
-    * 6.55 = 15.12 ft/s
-    */
-    public static final double kPhysicalMaxSpeedMetersPerSecond = Units.feetToMeters(18.01);
-    public static final double kPhysicalMaxAngularSpeedRadiansPerSecond = 2 * 2 * Math.PI;
-
-    public static final double kTeleDriveMaxSpeedMetersPerSecond = 
-                kPhysicalMaxSpeedMetersPerSecond / 4; //TODO: TeleOp drive speed
-    public static final double kTeleDriveMaxAngularSpeedRadiansPerSecond = 
-                kPhysicalMaxAngularSpeedRadiansPerSecond / 4; //TODO: TeleOp angle speed
-    public static final double kTeleDriveMaxAccelerationUnitsPerSecond = 3;
-    public static final double kTeleDriveMaxAngularAccelerationUnitsPerSecond = 3;
-    public static final double kDriveBaseRadius = 0.0;
-
-    public static final double traslationP = 0.0,
-                               traslationD = 0.0,
-                               rotationP = 0.0,
-                               rotationD = 0.0;
+    /** To change offsets easily * */
+    // Minus  = Counterclockwise
+    // Plus = Clockwise
   }
-
-  /*************** MISC ****************/
 
   public static final class VisionConstants {
 
-    public static final String tapeLimelight = "limelight-tape";
+    public static final String neuralLimelight = "limelight-neural";
     public static final String tagLimelightName = "limelight-tags";
 
-    public static double HEIGHT_OF_HIGH_NODE = 0.90; //Elevation of Target
-    public static double HEIGHT_OF_MID_NODE = 0.60;
-    public static double HEIGHT_OF_TAG = 0.45;
-    public static double LIMELIGHT_FLOOR_CLEREANCE= 0.04819; //Elevation of the Limelight
-    public static double LIMELIGHT_VERTICAL_ANGLE = 0;
+    public static final int main_Pipeline = 0,
+        upper_Pipeline = 1,
+        medium_Pipeline = 2,
+        lower_Pipeline = 3;
 
-    public static final int normalTracking_Pipeline = 0,
-                            lowAlign_Pipeline = 1,
-                            midAlign_Pipeline = 2,
-                            highAlign_Pipeline = 3;
+    public static final double ambiguityThreshold = 0.15;
 
+    public static final String photonCam1 = "Placeholder0";
+    public static final String photonCam2 = "Placeholder1";
+    public static final String photonCam3 = "Placeholder2";
+    public static final String photonCam4 = "Placeholder3";
+
+    public static final AprilTagFieldLayout kTagLayout =
+        AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+    // Cam mounted facing forward, half a meter forward of center, half a meter up from center,
+    // values are in meters.
+    public static final Transform3d kRobotToCam1 =
+        new Transform3d(
+            new Translation3d(0.169418, 0.323596, 0.63754),
+            new Rotation3d(
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(-25.0),
+                Units.degreesToRadians(15.0)));
+    public static final Transform3d kRobotToCam2 =
+        new Transform3d(
+            new Translation3d(0.169418, -0.323596, 0.63754),
+            new Rotation3d(
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(-25.0),
+                Units.degreesToRadians(-15.0)));
+    public static final Transform3d kRobotToCam3 =
+        new Transform3d(
+            new Translation3d(0.033782, 0.323596, 0.63754),
+            new Rotation3d(
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(-25.0),
+                Units.degreesToRadians(165.0)));
+    public static final Transform3d kRobotToCam4 =
+        new Transform3d(
+            new Translation3d(0.033782, -0.323596, 0.63754),
+            new Rotation3d(
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(-25.0),
+                Units.degreesToRadians(-165.0)));
+
+    public static final Transform3d noteCam =
+        new Transform3d(
+            new Translation3d(0.0, 0.0, 0.63754),
+            new Rotation3d(
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(0.0),
+                Units.degreesToRadians(0.0)));
+
+    // (Fake values. Experiment and determine estimation noise on an actual robot.)
+    public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(1500, 1500, 1400);
+    public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(1000, 1000, 1400);
+
+    public static double xyStdDevCoefficient = 0.02;
+    public static double thetaStdDevCoefficient = 0.04;
   }
 
-  public static final class IOConstants{
-    public static final double kDeadband = 0.05;
-  }
+  /*   _________
+   /   _____/__  __ ____   ____
+   \_____  \\  \/ // __ \ /    \
+  /_______  /\   /\  ___/|   |  \
+          \/  \_/  \___  >___|  /
+                       \/     \/
+          */
 }

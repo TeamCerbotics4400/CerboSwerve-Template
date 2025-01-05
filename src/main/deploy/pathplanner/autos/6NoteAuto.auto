@@ -1,0 +1,67 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "StarterShoot"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto3"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto4"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto5"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootSim"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto6"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "5NoteAuto7"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

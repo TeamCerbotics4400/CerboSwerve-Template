@@ -1,0 +1,73 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 1.20862210340683,
+        "y": 5.539225686154654
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.5013930170513679,
+        "y": 6.323851734722014
+      },
+      "isLocked": false,
+      "linkedName": "MainStartPoint"
+    },
+    {
+      "anchor": {
+        "x": 4.827270596053316,
+        "y": 7.29585116802188
+      },
+      "prevControl": {
+        "x": 2.9418259121824937,
+        "y": 7.729152120215796
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "New Event Marker",
+      "waypointRelativePos": 0.85,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "ShootSim"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}
